@@ -9,7 +9,6 @@ const func = async function ({ deployments, getNamedAccounts, getChainId }) {
   const deployment = await deploy('ETHEcoleTicket', {
     args: [100, token, ethers.utils.parseEther('1'), 'https://eth-ecole-nft-site.vercel.app/api/'],
     from: deployer,
-    deterministicDeployment: true,
   });
   console.log(`Deployed NFT to ${deployment.address}`);
 };

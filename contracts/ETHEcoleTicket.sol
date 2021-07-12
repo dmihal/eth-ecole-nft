@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: Unlicense
+//SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
@@ -9,6 +9,7 @@ error ERC721TransferFailed(bytes returndata);
 error ERC721TransferRejected(bytes4 retval);
 error AllTicketsSold();
 error MustBeOwner();
+error Paused();
 
 contract ETHEcoleTicket is IERC721 {
   mapping(address => uint256) public addressToNFT;
@@ -24,12 +25,14 @@ contract ETHEcoleTicket is IERC721 {
   uint256 public purchasePrice;
   address public paymentToken;
 
+  bool public paused;
   address public owner;
   string public baseURI;
 
   event SetName(uint256 indexed tokenId, string name);
   event OwnershipTransferred(address indexed newOwner);
   event BaseURIChanged(string newBase);
+  event PausedSet(bool paused);
 
   string public override name = "ETH Ecole Ticket";
   string public override symbol = "ECOLE";
@@ -90,6 +93,9 @@ contract ETHEcoleTicket is IERC721 {
     if (totalSupply >= numberOfTickets) {
       revert AllTicketsSold();
     }
+    if (paused) {
+      revert Paused();
+    }
 
     ticketId = totalSupply + 1;
     totalSupply = ticketId;
@@ -107,6 +113,9 @@ contract ETHEcoleTicket is IERC721 {
   function rename(uint256 tokenId, string calldata name) external {
     if (nftOwner[tokenId] != msg.sender) {
       revert MustBeOwner();
+    }
+    if (paused) {
+      revert Paused();
     }
 
     nftName[tokenId] = name;
@@ -145,11 +154,19 @@ contract ETHEcoleTicket is IERC721 {
     emit OwnershipTransferred(newOwner);
   }
 
+  function setPaused(bool _paused) external {
+    if (msg.sender != owner) {
+      revert MustBeOwner();
+    }
+    paused = _paused;
+    emit PausedSet(_paused);
+  }
+
   function withdraw(address token) external {
     if (msg.sender != owner) {
       revert MustBeOwner();
     }
-    IERC20Permit(token).transferFrom(address(this), msg.sender, IERC20Permit(token).balanceOf(address(this)));
+    IERC20Permit(token).transfer(msg.sender, IERC20Permit(token).balanceOf(address(this)));
   }
 
   /**
@@ -284,6 +301,10 @@ contract ETHEcoleTicket is IERC721 {
   }
 
   function _transfer(address from, address to, uint256 tokenId) private {
+    if (paused) {
+      revert Paused();
+    }
+
     nftOwner[tokenId] = to;
     addressToNFT[from] = 0;
     addressToNFT[to] = 0;

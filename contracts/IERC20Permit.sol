@@ -11,6 +11,7 @@ pragma solidity >=0.8.0;
  * need to send a transaction, and thus is not required to hold Ether at all.
  */
 interface IERC20Permit {
+    function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
     function balanceOf(address owner) external view returns (uint256);
 
